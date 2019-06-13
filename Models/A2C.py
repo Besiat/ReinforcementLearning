@@ -43,7 +43,6 @@ class A2C:
 
     def train(self,states,actions,rewards,next_states,dones):
         values = self.predict_state_value(np.array(states))
-        next_values = self.predict_state_value(np.array(next_states))
         advantages = np.zeros((len(states), self.num_outputs))
         target = np.array(rewards)
         next_value = 0

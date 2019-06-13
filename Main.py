@@ -1,13 +1,20 @@
+import os
+import sys
+
+module_path = os.path.abspath(os.path.join('C:\\Users\\r.hakimov\\Documents\\GitHub\\ReinforcementLearning'))
+if module_path not in sys.path:
+    sys.path.append(module_path)
+
 from Models.A2C import A2C
-import gym
+from CustomEnvironments.DimensionWalk import DimensionWalk
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from Utils import encode_actions
+NUM_EPOCHS = 15
 
-NUM_EPOCHS = 2500
 
-
-def run_training(env, model):
+def run_training(env, model, action_array):
     actor_losses = []
     critic_losses = []
     total_rewards = []
@@ -15,7 +22,6 @@ def run_training(env, model):
         if i_episode % 100 == 1:
             print(str(i_episode) + ' Total Reward = ' + str(total_rewards[-1]))
         states, actions, rewards, next_states, dones = [], [], [], [], []
-
         observation = env.reset()
         done = False
         k = 0
@@ -25,10 +31,10 @@ def run_training(env, model):
             k = k + 1
             action = model.predict_action(np.array([observation]))
             states.append(observation)
-            observation, reward, done, info = env.step(action)
-            reward += k * 0.001
-            if (done == True):
-                reward = -10
+            observation, reward, done, info = env.step(action_array[action])
+            if (k > 200):
+                done = True
+
             next_states.append(observation)
             actions.append(action)
             rewards.append(reward)
@@ -40,13 +46,7 @@ def run_training(env, model):
         critic_losses.append(critic_loss)
     return total_rewards
 
-env = gym.make('BipedalWalker-v2')
-model = A2C(env.observation_space.shape[0],2,[8,16],lr_actor=0.001,lr_critic=0.001,gamma=0.99)
-a2c_total_rewards = run_training(env,model)
-
-running_rewards = []
-running_reward = 0
-for i in range(len(a2c_total_rewards)):
-    running_reward = 0.9*running_reward+0.1*a2c_total_rewards[i]
-    running_rewards.append(running_reward)
-plt.plot(range(0,NUM_EPOCHS),running_rewards)
+env = DimensionWalk([10,10])
+encoded_actions = [[0,1],[1,0],[-1,0],[0,-1]]
+model = A2C(env.observation_space,len(encoded_actions),[4],lr_actor=0.005,lr_critic=0.005,gamma=0.9)
+a2c_total_rewards = run_training(env,model,encoded_actions)
